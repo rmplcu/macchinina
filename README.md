@@ -10,15 +10,24 @@ Un progetto che realizza con Arduino una 'macchinina', capace di trovare e segui
 - Ponte H: L293D
 - Pila 9V
 - Sensore IR
-- Buzzer
+- 3 LED
+- 3 resistenze (220 &#937;, 1 K&#937;, 5.1 &#937;)
 
 ## Obiettivo
 
-Lo scopo del progetto è di creare una macchinina che tramite i 4 sensori di ultrasuoni (due davanti, uno a sinistra e uno a destra) è capace di rilevare la distanza dal muro e adattare la velocità dei motori in modo tale da raggiungerlo (segnalandolo con il buzzer) e procedere lungo la sua sinistra o destra secondo ciò che preferisce l'utente.
+Lo scopo del progetto è di creare una macchinina capace di ricevere comandi dall'utente tramite un telecomando ed eseguire la funzione associata allo specifico tasto premuto.
 
 ## Funzionamento
 
-TODO
+Tramite il sensore infrarossi viene ricevuto il codice del tasto premuto dall'utente, nel caso sia valido viene eseguita la funzione corrispondente (segnalandolo all'utente tramite i led).
+Le funzioni possibili sono 4:
+
+- __Reach Wall__ (led verde) &rarr; la macchinina si muove in avanti fino a trovare un ostacolo (muro) davanti a se, poi si ferma a qualche centimetro da esso.
+- __Left Wall Follower__ (led blu) &rarr;  viene seguito il muro che è tenuto alla sinistra della macchinina: grazie al sensore ultrasonico di sinistra rileva la distanza dal muro, in funzione di cui adatta la velocità dei motori per avvicinarsi o allontanarsi da esso, e grazie al sensore frontale-sinistro rileva quando si è giunti ad un angolo e quidi effettua una curva di 90° a destra. 
+- __Right Wall Follower__ (led verde e blu) &rarr; funzione identica ma speculare (usa sensore di destra, e curva di 90° a sinistra quando il sensore frontale-destro rileva un ostacolo) a quella precedente.
+- __Joystick__ (led verde, blu e rosso) &rarr; tramite questa funzione è possibile comandare direttamente la direzione dei motori così da muovere la macchinina realizzando di fatto un joystick. I comandi sono: avanti (entrambi i motori in avanti), sinistra (motore destro in avanti, sinistro fermo), destra (motore destro fermo, sinistro in avanti), indietro (entrambi i motori indietro), stop (entrambi i motori fermi).
+
+Inoltre è possibile uscire da qualsiasi di queste "modalità" premendo il tasto corrispondente, che riporta la macchinina nello stato base in cui aspetta il comando dell'utente.
 
 ## Caratteristiche
 
