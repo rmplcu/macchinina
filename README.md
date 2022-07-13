@@ -11,7 +11,7 @@ Un progetto che realizza con Arduino una 'macchinina', capace di trovare e segui
 - Pila 9V
 - Sensore IR
 - 3 LED
-- 3 resistenze (220 &#937;, 1 K&#937;, 5.1 &#937;)
+- 3 resistenze (220 &#937;, 1 K&#937;, 5.1 K&#937;)
 
 ## Obiettivo
 
