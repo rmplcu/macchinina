@@ -176,7 +176,7 @@ void follow(boolean left) {
       }
     }
     
-    delay(30);
+    delay(20);
   }
 }
 
@@ -185,6 +185,15 @@ void reach_wall() {
   forward();
   while (calc_distance_cm(sonar_front_left, MAX_DIST) >= 15 && calc_distance_cm(sonar_front_right, MAX_DIST) >= 15 ) {
     move_motors(255,255);
+    
+    if (IrReceiver.decode()) {
+      IrReceiver.resume();
+      if (IrReceiver.decodedIRData.command == 0x40) {
+          move_motors(0,0);       
+          break;
+      }
+    }
+    
     delay(10);
   }
   move_motors(0,0);
