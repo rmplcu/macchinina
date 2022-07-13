@@ -41,17 +41,17 @@ Inoltre è possibile uscire da qualsiasi di queste "modalità" premendo il tasto
             <td rowspan="10"><img src="images/remote.jpg"/></td>
             <td><b>Power</b></td>
             <td>Reach wall</td>
-            <td style="background-color:green;"></td>
+            <td>Verde</td>
         </tr>
         <tr>
             <td><b>Up Arrow</b></td>
             <td>Follow Left</td>
-            <td style="background-color:blue;"></td>
+            <td>Blu</td>
         </tr>
         <tr>
             <td><b>Down Arrow</b></td>
             <td>Follow Right</td>
-            <td style="background: linear-gradient(to right, blue 50%, green 50%) "></td>
+            <td>Verde + Blu</td>
         </tr>
         <tr>
             <td><b>Pause/Play</b></td>
@@ -61,7 +61,7 @@ Inoltre è possibile uscire da qualsiasi di queste "modalità" premendo il tasto
         <tr>
             <td><b>Func/Stop</b></td>
             <td>Joystick</td>
-            <td style="background: linear-gradient(to right, blue 33%, green 33% 66%, red 66% 100%) "></td>
+            <td>Verde + Rosso + Blu</td>
         </tr>
         <tr>
             <td><b>2</b></td>
