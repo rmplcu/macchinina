@@ -38,7 +38,7 @@ Inoltre è possibile uscire da qualsiasi di queste "modalità" premendo il tasto
     </thead>
     <tbody>
         <tr>
-            <td rowspan="10"><img src="images/remote.jpg"/></td>
+            <td rowspan="11"><img src="images/remote.jpg"/></td>
             <td><b>Power</b></td>
             <td>Reach wall</td>
             <td>Verde</td>
@@ -87,6 +87,11 @@ Inoltre è possibile uscire da qualsiasi di queste "modalità" premendo il tasto
             <td><b>5</b></td>
             <td>Stop (Joystick mode)</td>
             <td></td>
+        </tr>
+        <tr>
+            <td><b>Altro</b></td>
+            <td>Nessuna Funzione </td>
+            <td>Rosso</td>
         </tr>
     </tbody>
 </table>
