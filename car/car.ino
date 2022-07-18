@@ -3,7 +3,7 @@
 #include <TaskScheduler.h>
 
 //base "speed", a.k.a. PWM value
-#define BASE_SPEED 175
+#define BASE_SPEED 190
 
 //Directions and PWM of the left motor
 #define MOTOR_LEFT 5
@@ -49,11 +49,9 @@ NewPing sonar_left(TRIG_LEFT, ECHO_LEFT, MAX_DIST);
 NewPing sonar_front_right(TRIG_FRONT_RIGHT, ECHO_FRONT_RIGHT, MAX_DIST);
 NewPing sonar_right(TRIG_RIGHT, ECHO_RIGHT, MAX_DIST);
 
-byte sp_right = BASE_SPEED;
-byte sp_left = BASE_SPEED;
+bool joymode = false; //joystick mode active?
+bool active = false; //any task enebled? 
 
-
-//Set motors direction to move forward
 void forward() {
   digitalWrite(DIRECTION_LEFT, HIGH);
   digitalWrite(DIRECTION_RIGHT, HIGH);
@@ -62,7 +60,6 @@ void forward() {
   digitalWrite(REVERSE_DIRECTION_RIGHT, LOW);
 }
 
-//Set motors direction to move backward
 void backward() {
   digitalWrite(DIRECTION_LEFT, LOW);
   digitalWrite(DIRECTION_RIGHT, LOW);
@@ -71,7 +68,6 @@ void backward() {
   digitalWrite(REVERSE_DIRECTION_RIGHT, HIGH);
 }
 
-//Set motors direction to make a right turn 
 void turn_right() {
   //right motor goes backwards
   digitalWrite(DIRECTION_RIGHT, LOW);
@@ -114,52 +110,39 @@ float calc_distance_cm(NewPing sonar, int max_dist) {
   return t == 0 ? max_dist : (t + 28.5)/57.0;
 }
 
-
-void follow_left() {
-  float dist_left = calc_distance_cm(sonar_left, MAX_DIST);
-  float dist_front = calc_distance_cm(sonar_front_left, MAX_DIST);
-
-  if (dist_front <= 15) {
-    turn_right();
+//Wall follow routine
+void follow(bool left) {
+  float dist_rl;
+  byte sp_left, sp_right;
+  left ? dist_rl = calc_distance_cm(sonar_left, MAX_DIST) : dist_rl = calc_distance_cm(sonar_right, MAX_DIST); 
+  
+  if (calc_distance_cm(sonar_front_left, MAX_DIST) <= 15 || calc_distance_cm(sonar_front_right, MAX_DIST) <= 15) {
+    left ? turn_right() : turn_left();
   } else {
     forward();
-    if (dist_left < 4) {
+    if (dist_rl < 3) {
       sp_left = 255;
       sp_right = 0;
-    } else if (dist_left > 20) {
+    } else if (dist_rl > 15) {
       sp_left = 0;
       sp_right = 255;
     } else {
-      sp_left = BASE_SPEED + (10 - dist_left) * 3.5;
+      sp_left = BASE_SPEED + (8 - dist_rl) * 4.5;
       sp_right = BASE_SPEED;
     }
 
-    move_motors(sp_left, sp_right);
+    left ? move_motors(sp_left, sp_right) : move_motors(sp_right, sp_left);
   }
+}
+
+//Follow wall from left side of the car
+void follow_left() {
+  follow(true);
 }
 
 //Follow wall from right side of the car
 void follow_right() {
-  float dist_right = calc_distance_cm(sonar_right, MAX_DIST);
-  float dist_front = calc_distance_cm(sonar_front_right, MAX_DIST);
-
-  if (dist_front <= 15) {
-    turn_left();
-  } else {
-    forward();
-    if (dist_right < 4) {
-      sp_right = 255;
-      sp_left = 0;
-    } else if (dist_right > 20) {
-      sp_right = 0;
-      sp_left = 255;
-    } else {
-      sp_left = BASE_SPEED;
-      sp_right = BASE_SPEED + (10 - dist_right) * 3.5;
-    }
-
-    move_motors(sp_left, sp_right);
-  }
+  follow(false);
 }
 
 //Go forward till wall
@@ -170,6 +153,7 @@ void reach_wall() {
   } else {
     move_motors(0,0);
     digitalWrite(LED_G, LOW); 
+    active = false;
     scheduler.disableAll();
   }
 
@@ -177,20 +161,28 @@ void reach_wall() {
 
 //Handle joystick commands
 void handle_joy(uint16_t command) {
-  if (command == 0x5a) {
-    forward();
-    move_motors(255, 0);
-  } else if (command == 0x18) {
-    forward();
-    move_motors(255,255);
-  } else if (command == 0x52) {
-    backward();
-    move_motors(255,255);
-  } else if (command == 0x8) {
-    forward();
-    move_motors(0, 255);
-  } else if (command == 0x1c) {
-    move_motors(0,0);
+  switch (command) {
+    case 0x5a :
+      forward();
+      move_motors(255, 0);  
+      break;
+    case 0x18:
+      forward();
+      move_motors(255,255);
+      break;
+    case 0x52:
+      backward();
+      move_motors(255,255);     
+      break;
+    case 0x8:
+      forward();
+      move_motors(0, 255);
+      break;
+    case 0x1c:
+      move_motors(0,0);
+      break;
+    default:
+      break;
   }
 }
 
@@ -201,8 +193,7 @@ Task ReachWall(20, TASK_FOREVER, reach_wall);
 
 
 void setup() {
-  Serial.begin(115200);
-  //Add task
+  //Add task to scheduler
   scheduler.init();
   scheduler.addTask(LeftFollow);
   scheduler.addTask(RightFollow);
@@ -216,6 +207,7 @@ void setup() {
   pinMode(MOTOR_LEFT, OUTPUT);
   pinMode(MOTOR_RIGHT, OUTPUT);
 
+  //Leds
   pinMode(LED_B, OUTPUT);
   pinMode(LED_G, OUTPUT);
   pinMode(LED_R, OUTPUT);
@@ -225,20 +217,17 @@ void setup() {
 
 }
 
-boolean joymode = false; //joystick mode active?
-boolean active = false; //any task enebled? 
-
 void loop() {
   if (IrReceiver.decode()) {
     IrReceiver.resume();
-    digitalWrite(LED_R, LOW);
+    if (!active) digitalWrite(LED_R, LOW);
 
     if (IrReceiver.decodedIRData.command == 0x45 && !active)  {
-      digitalWrite(LED_G, HIGH);
+      digitalWrite(LED_G, HIGH);      
       ReachWall.enable();
       active = true;
     } else if (IrReceiver.decodedIRData.command == 0x9 && !active) {
-      digitalWrite(LED_B, HIGH);
+      digitalWrite(LED_B, HIGH);      
       LeftFollow.enable();
       active = true;
     } else if (IrReceiver.decodedIRData.command == 0x7 && !active) {
@@ -250,21 +239,21 @@ void loop() {
       digitalWrite(LED_G, HIGH);
       digitalWrite(LED_B, HIGH);
       digitalWrite(LED_R, HIGH);
+      
       joymode = true;
       active = true;
     } else if (IrReceiver.decodedIRData.command == 0x40) {
       digitalWrite(LED_G, LOW);
       digitalWrite(LED_B, LOW);
-      digitalWrite(LED_R, LOW);
+      
       scheduler.disableAll();
       joymode = false;
       active = false;
       move_motors(0,0);
     } else if (joymode) {
       handle_joy(IrReceiver.decodedIRData.command);
-    } else {
+    } else if (!active) {
       digitalWrite(LED_R, HIGH);
-      Serial.println("no function associated");
     }
   }
   scheduler.execute();
