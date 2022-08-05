@@ -2,7 +2,7 @@
 #include <IRremote.hpp>
 #include <TaskScheduler.h>
 
-//base "speed", a.k.a. PWM value
+//base "speed" (PWM)
 #define BASE_SPEED 190
 
 //Directions and PWM of the left motor
@@ -52,6 +52,7 @@ NewPing sonar_right(TRIG_RIGHT, ECHO_RIGHT, MAX_DIST);
 bool joymode = false; //joystick mode active?
 bool active = false; //any task enebled? 
 
+//Set direction of both motors forward
 void forward() {
   digitalWrite(DIRECTION_LEFT, HIGH);
   digitalWrite(DIRECTION_RIGHT, HIGH);
@@ -60,6 +61,7 @@ void forward() {
   digitalWrite(REVERSE_DIRECTION_RIGHT, LOW);
 }
 
+//Set direction of both motors to backward
 void backward() {
   digitalWrite(DIRECTION_LEFT, LOW);
   digitalWrite(DIRECTION_RIGHT, LOW);
@@ -79,7 +81,7 @@ void turn_right() {
 
   move_motors(255, 255);
 
-  //use time to turn 90 degree (not so good)
+  //use time to turn 90 degree
   delay(250);
 }
 
@@ -110,42 +112,62 @@ float calc_distance_cm(NewPing sonar, int max_dist) {
   return t == 0 ? max_dist : (t + 28.5)/57.0;
 }
 
-//Wall follow routine
-void follow(bool left) {
-  float dist_rl;
+//Left wall follow routine
+void follow_left() {
   byte sp_left, sp_right;
-  left ? dist_rl = calc_distance_cm(sonar_left, MAX_DIST) : dist_rl = calc_distance_cm(sonar_right, MAX_DIST); 
+  float dist_l = calc_distance_cm(sonar_left, MAX_DIST); 
   
   if (calc_distance_cm(sonar_front_left, MAX_DIST) <= 15 || calc_distance_cm(sonar_front_right, MAX_DIST) <= 15) {
-    left ? turn_right() : turn_left();
+    turn_right();
   } else {
     forward();
-    if (dist_rl < 3) {
+    if (dist_l < 3) {
       sp_left = 255;
       sp_right = 0;
-    } else if (dist_rl > 15) {
+    } else if (dist_l > 15) {
       sp_left = 0;
       sp_right = 255;
-    } else {
-      sp_left = BASE_SPEED + (8 - dist_rl) * 4.5;
+    } else if (dist_l < 9) {
+      // 3 <= dist < 9
+      sp_left = 255;
       sp_right = BASE_SPEED;
+    } else if (dist_l >= 9) { //9 <= dist <= 15
+      sp_right = 255;
+      sp_left = BASE_SPEED;
     }
 
-    left ? move_motors(sp_left, sp_right) : move_motors(sp_right, sp_left);
+    move_motors(sp_left, sp_right);
   }
 }
 
-//Follow wall from left side of the car
-void follow_left() {
-  follow(true);
-}
-
-//Follow wall from right side of the car
+//Right wall follow routine
 void follow_right() {
-  follow(false);
+  byte sp_left, sp_right;
+
+  float dist_r = calc_distance_cm(sonar_right, MAX_DIST);
+  if (calc_distance_cm(sonar_front_left, MAX_DIST) <= 15 || calc_distance_cm(sonar_front_right, MAX_DIST) <= 15) {
+    turn_left();
+  } else {
+    forward();
+    if (dist_r < 3) {
+      sp_right = 255;
+      sp_left = 0;
+    } else if (dist_r > 15) {
+      sp_right = 0;
+      sp_left = 255;
+    } else if (dist_r < 9) { // 3 <= dist < 9
+      sp_left = BASE_SPEED;
+      sp_right = 255;
+    } else if (dist_r >= 9) { //9 <= dist <= 15
+      sp_left = 255;
+      sp_right = BASE_SPEED;
+    }
+
+    move_motors(sp_left, sp_right);
+  }
 }
 
-//Go forward till wall
+//Go forward till wall is found
 void reach_wall() {
   forward();
   if (calc_distance_cm(sonar_front_left, MAX_DIST) >= 15 && calc_distance_cm(sonar_front_right, MAX_DIST) >= 15 ) {
@@ -186,11 +208,9 @@ void handle_joy(uint16_t command) {
   }
 }
 
-
 Task LeftFollow(20, TASK_FOREVER, follow_left);
 Task RightFollow(20, TASK_FOREVER, follow_right);
 Task ReachWall(20, TASK_FOREVER, reach_wall);
-
 
 void setup() {
   //Add task to scheduler
